@@ -132,3 +132,14 @@ Available endpoints:
   # /api/clear_logged_sessions
    - `PATCH` makes all login tokens for a given user obsolete.  
  ###### Filip Zygmuntowicz 2022
+
+# /api/journal/<string:year>(ISO 8601)
+  - `GET` - returns journal's content for given date. Example:
+   - `api/journal/2022-09-11`
+  ```json
+  {
+    "content": "Today I woke up."
+}
+```
+  - `POST with json body consisting of keys: ["journal_content"]` - creates entry with content given in json's body.
+  - `PATCH with json body consisting of keys: ["journal_content"]` - changes journal's content to the given in json's body.

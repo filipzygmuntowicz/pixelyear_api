@@ -90,7 +90,7 @@ class Main(Resource):
                 pixels = Pixels.query.filter_by(
                     user_id=user_id, year=year, category=category).first()
                 if pixels is None:
-                    zero_pixels = create_pixels(None, category, user_id, year)
+                    zero_pixels = create_pixels(category, user_id, year)
                     db.session.add(zero_pixels)
                     db.session.commit()
                     pixels = Pixels.query.filter_by(

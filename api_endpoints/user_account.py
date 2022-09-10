@@ -31,19 +31,13 @@ class Register(Resource):
                         password.encode("utf-8"),
                         gensalt(14)).decode("utf-8")
                     user_uuid = uuid4()
-                    new_user = User(new_user_id, user_uuid, email, password,
+                    new_user = User(user_uuid, email, password,
                                     "", "", "")
                     db.session.add(new_user)
-                    last_pixels = Pixels.query.order_by(
-                        Pixels.pixels_id.desc()).first()
-                    new_pixels_id = 1
-                    if last_pixels is not None:
-                        new_pixels_id = last_pixels.pixels_id + 1
                     for category in Category:
                         category = category.name
                         category_object = create_pixels(
-                            new_pixels_id, category, new_user_id)
-                        new_pixels_id += 1
+                            category, new_user_id)
                         db.session.add(category_object)
                     db.session.commit()
                     response = Response(

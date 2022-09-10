@@ -5,6 +5,7 @@ from api_endpoints.main import *
 from api_endpoints.smaller_utility import *
 from api_endpoints.user_account import *
 from api_endpoints.statistics import *
+from api_endpoints.journal import Journal_endpoint
 
 api.add_resource(Statistics, "/api/statistics/<string:year>")
 api.add_resource(Main, "/api/<string:year>/<string:category>")
@@ -21,6 +22,7 @@ api.add_resource(
 api.add_resource(
     Reset_password, "/api/reset_password/<string:password_reset_token>")
 api.add_resource(Clear_logged_sessions, "/api/clear_logged_sessions")
+api.add_resource(Journal_endpoint, "/api/journal/<string:date>")
 
 if __name__ == '__main__':
     app.run()
