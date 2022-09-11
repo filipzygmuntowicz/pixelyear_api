@@ -54,8 +54,8 @@ Available endpoints:
 }
   ```
   
-  # /api/mean/<string:year>/<string:category>?numerical={True, False}
-   - `GET` returns mean for a given year and category, mode for "exercises" and "health" categories, arithmethic for all the others. You can skip category in url to get means of all categories. Also there is an optional argument whether categories name should be replaced by their ids. Examples:
+  # /api/mean/<string:year>/<string:category>?type={numeric}
+   - `GET` returns mean for a given year and category, mode for "exercises" and "health" categories, arithmethic for all the others. You can skip category in url to get means of all categories. Also there is an optional argument ?type whether categories name should be replaced by their ids. Examples:
    - `/api/mean/2022/mood`
    
 ```json
@@ -87,8 +87,8 @@ Available endpoints:
     ]
 }
 ```
-  # /api/updated_today/<string:category>?numerical={True, False}
-   - `GET` returns information whether pixels in given category were edited today. /category in url is optional, if you skip it it will return information about all categories. Also there is an optional argument whether categories name should be replaced by their ids. Examples:
+  # /api/updated_today/<string:category>?type={numeric}
+   - `GET` returns information whether pixels in given category were edited today. /category in url is optional, if you skip it it will return information about all categories. Also there is an optional argument ?type whether categories name should be replaced by their ids. Examples:
    - `api/updated_today/reading`
 ```json
 {

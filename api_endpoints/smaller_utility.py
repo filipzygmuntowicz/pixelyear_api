@@ -38,8 +38,7 @@ class Updated_today(Resource):
                     year=today.year).first().ratings
                 today_pixel_rate = today_pixel_rate.split(",")
                 args = request.args
-                if "numerical" in args and \
-                        is_str_true(args["numerical"]) is True:
+                if "type" in args and "numeric" in args["type"]:
                     category = str(category.value)
                 else:
                     category = category.name
@@ -73,8 +72,7 @@ class Updated_today_category(Resource):
                         year=today.year).first().ratings
                     today_pixel_rate = today_pixel_rate.split(",")
                     args = request.args
-                    if "numerical" in args and \
-                            is_str_true(args["numerical"]) is True:
+                    if "type" in args and "numeric" in args["type"]:
                         category = str(category.value)
                     else:
                         category = category.name

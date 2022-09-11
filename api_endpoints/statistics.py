@@ -10,8 +10,7 @@ class Mean(Resource):
             means = {}
             for category in Category:
                 args = request.args
-                if "numerical" in args and \
-                        is_str_true(args["numerical"]) is True:
+                if "type" in args and "numeric" in args["type"]:
                     category_key_name = str(category.value)
                 else:
                     category_key_name = category.name
@@ -38,8 +37,7 @@ class Mean_category(Resource):
                 means = {}
                 for category in Category:
                     args = request.args
-                    if "numerical" in args and \
-                            is_str_true(args["numerical"]) is True:
+                    if "type" in args and "numeric" in args["type"]:
                         category_key_name = str(category.value)
                     else:
                         category_key_name = category.name

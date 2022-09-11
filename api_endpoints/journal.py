@@ -24,7 +24,7 @@ class Journal_endpoint(Resource):
         if response.status == "200 OK":
             date = datetime.strptime(date, "%Y-%m-%d")
             if Journal.query.filter_by(
-                    user_id=user_id, date=date).first() is not None:
+                    user_id=user_id, date=date).first() is None:
                 new_entry = Journal(journal_content, user_id, date)
                 db.session.add(new_entry)
                 db.session.commit()
