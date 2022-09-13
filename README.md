@@ -2,8 +2,8 @@ Categories to choose from: ["rate", "anxiety", "mood", "weather", "exercises", "
 Available endpoints:
 # /api/<string:year>/<string:category>
   - `GET` returns pixels data for a given year and category. The format is different for "exercises" category. Examples:
-```json
   - `/api/2022/health`:
+```json
 {
     "january": "1333432343213213214112124422442",
     "february": "1212141242312311241431121422",
