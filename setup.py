@@ -4,7 +4,7 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_restful import Api
 from enum import Enum
 
-
+# globals 
 jwt_key = 'placeholder'
 ENV = 'prod'
 app = Flask(__name__)
@@ -13,7 +13,7 @@ app.config['CORS_HEADERS'] = 'Content-Type'
 app.secret_key = "don't tell anyone"
 api = Api(app)
 
-
+# setting up database credentials
 if ENV == 'dev':
     config = open('configlocal.txt', 'r').read()
     app.debug = True
@@ -28,6 +28,6 @@ app.config['JSONIFY_PRETTYPRINT_REGULAR'] = True
 db = SQLAlchemy(app)
 
 
-# Enum for more error-proof code
+# enum for more error-proof code
 class Category(Enum):
     rate, anxiety, mood, weather, exercises, reading, health = range(7)

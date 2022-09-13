@@ -8,12 +8,14 @@ from math import ceil
 from flask_restful import Resource
 
 
+#   converts string to boolean, used in arguments parsing
 def is_str_true(string):
     if string == "True" or string == "true":
         return True
     return False
 
 
+#   check whether given year is a leap year
 def is_leap_year(year):
     year = int(year)
     if year % 4 != 0:
@@ -26,31 +28,30 @@ def is_leap_year(year):
         return False
 
 
+#   creates an empty (all ratings are equal to 0) pixels data in the database
+#   for a given category, user and year (current year by default),
+#   optionally it can also fill the pixels data with desired ratings
 def create_pixels(
-        pixels_id, category, user_id, year=datetime.now().year, ratings=None):
-    if pixels_id is None:
-        last_pixels = Pixels.query.order_by(
-            Pixels.pixels_id.desc()).first()
-        new_pixels_id = 1
-        if last_pixels is not None:
-            new_pixels_id = last_pixels.pixels_id + 1
-    else:
-        new_pixels_id = pixels_id
+        category, user_id, year=datetime.now().year, ratings=None):
     if ratings is None:
+#   creates an empty array of ratings
         if is_leap_year(year):
             r = [0] * 366
             ratings = ','.join(str(x) for x in r)
         else:
             r = [0] * 365
             ratings = ','.join(str(x) for x in r)
-    new_pixels = Pixels(new_pixels_id, category, year, user_id, ratings)
+    new_pixels = Pixels(category, year, user_id, ratings)
     return new_pixels
 
 
+#   converts index of ratings array to a datetime object for the rating's day
 def get_pixels_date_out_of_index(index, year):
     return datetime(int(year), 1, 1) + timedelta(index)
 
 
+#   takes an array of ratings and deletes all of the empty (with 0 as a rate)
+#   days from it
 def get_nonzero_ratings(ratings):
     nonzero_ratings = []
     for rate in ratings:
@@ -60,6 +61,11 @@ def get_nonzero_ratings(ratings):
     return nonzero_ratings
 
 
+#   takes 2 arrays of ratings and deletes the days where one of the arrays
+#   is empty from both of them, needed for optimalization sake,
+#   used in statistics,
+#   it is used in circumstances where both arrays are from the same year,
+#   either way it might now work because of the leap year
 def get_nonzero_ratings_for_both(ratings1, ratings2, category1, category2):
     nonzero_ratings = []
     for rate1, rate2 in zip(ratings1, ratings2):
@@ -72,6 +78,9 @@ def get_nonzero_ratings_for_both(ratings1, ratings2, category1, category2):
     return nonzero_ratings
 
 
+#   parses the arguments from json body of a request,
+#   checks whether all of the necessary arguments are present
+#   and if not it returns corresponding response
 def parse_args_from_body(*args):
     try:
         args_table = []
@@ -81,6 +90,7 @@ def parse_args_from_body(*args):
             json.dumps({
                 "success": "OK."}),
             status=200, mimetype='application/json')
+#   KeyError happens when arg is not found in request.json
     except KeyError:
         args_table = list(args)
         response = Response(
@@ -90,6 +100,8 @@ values not provided in request body!"""}),
     return response, args_table
 
 
+#   uses parse_args_from_body to parse arguments from json body
+#   and also checks if the'yre not empty
 def check_if_values_are_empty(*args):
     response, args_table = parse_args_from_body(*args)
     if response.status == "200 OK":
@@ -104,6 +116,8 @@ def check_if_values_are_empty(*args):
     return result_tuple
 
 
+#   checks jwt of a given request provided in Authorization Token Bearer
+#   and returns user_id of the token's owner
 def verify_jwt(token=None):
     user_id = None
     try:
@@ -150,6 +164,10 @@ def verify_jwt(token=None):
     return response, user_id
 
 
+#   combines check_if_values_are_empty and verify_jwt into one function,
+#   useful for the sake of DRY and code readability
+#   it returns values from checked arguments and user_id, also a response
+#   object that states whether the operation was succesfull
 def verify_jwt_and_check_for_empty(*args):
     """
         Returns a tuple:
@@ -169,6 +187,9 @@ def verify_jwt_and_check_for_empty(*args):
     return result_tuple
 
 
+#   returns a mean of ratings for a given user's year and category,
+#   dominanta for exercises and reading and arithmethic mean for the
+#   rest, returns 0 if ratings are empty
 def get_mean(user_id, year, category):
     pixels = Pixels.query.filter_by(
         user_id=user_id, year=year, category=category).first()
@@ -213,6 +234,9 @@ def get_mean(user_id, year, category):
     return mean
 
 
+#   changes acceptable_token_creation_date for a given user,
+#   practically it works as a logout on all of the logged in
+#   devices
 def change_acceptable_token_creation_date(user_id):
     user = User.query.filter_by(user_id=user_id).first()
     user.acceptable_token_creation_date = str(datetime.today())
@@ -220,6 +244,10 @@ def change_acceptable_token_creation_date(user_id):
     db.session.commit()
 
 
+#   returns data of a worst or best day (stated as an argument),
+#   for a given user in a given year,
+#   can return combined data for both worst and best day,
+#   used in statistics
 def best_or_worst_day(ratings_array, year, best_or_worst):
     pixels_rate = ratings_array["rate"]
     pixels_anxiety = ratings_array["anxiety"]
@@ -265,6 +293,9 @@ def best_or_worst_day(ratings_array, year, best_or_worst):
     return old_pixels_zipped, best_or_worst_day_index, best_or_worst_day_date
 
 
+#   transform exercises ratings data, replacing
+#   the ratings with a proper weights,
+#   used in calculating correlations for statistics endpoints
 def transform_exercises_data(comparable_data):
     for data in comparable_data:
         exercises = Category.exercises.name
@@ -278,6 +309,10 @@ def transform_exercises_data(comparable_data):
     return comparable_data
 
 
+#   takes 2 pixels ORM objects and returns their
+#   ratings data in a format that allows for correlation
+#   checkings, so it only accounts for the days where
+#   ratings were filled for both checked categories
 def get_comparable_data(pixels1, pixels2):
     if pixels1.category == pixels2.category:
         raise SameCategoriesException
@@ -294,6 +329,13 @@ def get_interval(x, y):
     return list(range(x, y+1))
 
 
+#   returns whether datas of ratings from 2 categories
+#   correlate or not, using custom algorithm based on weights
+#   max1 and max2 arguments are to be provided as arguments
+#   for the optimalization and code readability sakes,
+#   by default it checks if ratings for 2 categories
+#   are both high for the day, with reverse=True it checks
+#   if they're both low
 def correlation(max1, max2, comparable_datas, reverse=False):
     category1 = list(comparable_datas[0].keys())[0]
     category2 = list(comparable_datas[0].keys())[1]
@@ -308,17 +350,18 @@ def correlation(max1, max2, comparable_datas, reverse=False):
         high2 = get_interval(1, ceil(max2/3))
         medium2 = get_interval(ceil(max2/3)+1, ceil(2*max2/3))
         low2 = get_interval(ceil(2*max2/3)+1, 9999)
-    corrs = 0
+    correlations = 0
     for data in comparable_datas:
         if data[category1] in low and data[category2] in low2:
-            corrs += 1
+            correlations += 1
             continue
         elif data[category1] in medium and data[category2] in medium2:
-            corrs += 1
+            correlations += 1
             continue
         elif data[category1] in high and data[category2] in high2:
-            corrs += 1
+            correlations += 1
 # print(round(corrs/len(comparable_datas), 2))
-    if len(comparable_datas) != 0 and corrs/len(comparable_datas) >= 0.5:
+    if len(comparable_datas) != 0 and \
+            correlations/len(comparable_datas) >= 0.5:
         return True
     return False

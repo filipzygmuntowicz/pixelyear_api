@@ -2,7 +2,7 @@ from functions import *
 
 
 class Mean(Resource):
-
+    #   returns means of all categories for a given year
     def get(self, year):
 
         response, user_id = verify_jwt()
@@ -23,7 +23,7 @@ class Mean(Resource):
 
 
 class Mean_category(Resource):
-
+    #   returns a mean for a single category for a given year
     def get(self, year, category):
 
         response, user_id = verify_jwt()
@@ -50,7 +50,8 @@ class Mean_category(Resource):
 
 
 class Statistics(Resource):
-
+    #   returns strings of statistical data, best and worst day of the year
+    #   and what categories correlate and how
     def get(self, year):
         response, user_id = verify_jwt()
         if response.status == "200 OK":

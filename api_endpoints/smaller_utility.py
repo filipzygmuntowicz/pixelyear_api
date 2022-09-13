@@ -2,7 +2,7 @@ from functions import *
 
 
 class Years_with_active_pixel(Resource):
-
+    #   returns years where the user has rated atleast one day
     def get(self):
         response, user_id = verify_jwt()
         if response.status == "200 OK":
@@ -21,7 +21,10 @@ class Years_with_active_pixel(Resource):
 
 
 class Updated_today(Resource):
-
+    #   returns the categories that the user has rated today with their
+    #   corresponding rates, also returns unrated categories
+    #   in a seperate array, allows for the returning data's categories to be
+    #   in numeric format with ?type=numeric argument
     def get(self):
         response, user_id = verify_jwt()
         if response.status == "200 OK":
@@ -54,7 +57,7 @@ class Updated_today(Resource):
 
 
 class Updated_today_category(Resource):
-
+    #   same as Updated_today but for a single category provided in url
     def get(self, category):
         response, user_id = verify_jwt()
         if response.status == "200 OK":
@@ -65,7 +68,7 @@ class Updated_today_category(Resource):
             delta = today - date_first_jan
             pos = delta.days
             if category == "all":
-                response_json = {"updated": [], "not_updated": []}
+                response_json = {"updated": {}, "not_updated": []}
                 for category in Category:
                     today_pixel_rate = Pixels.query.filter_by(
                         user_id=user_id, category=category.name,
@@ -79,7 +82,8 @@ class Updated_today_category(Resource):
                     if today_pixel_rate[pos] == "0":
                         response_json["not_updated"].append(category)
                     else:
-                        response_json["updated"].append(category)
+                        response_json[
+                            "updated"][str(category)] = today_pixel_rate[pos]
                 response = Response(
                             json.dumps(response_json),
                             status=200, mimetype='application/json')

@@ -2,12 +2,13 @@ from functions import *
 
 
 class Main(Resource):
-
+    #   returns pixels data
     def get(self, year, category):
         response, user_id = verify_jwt()
         if response.status == "200 OK":
             pixels = Pixels.query.filter_by(
                 user_id=user_id, year=year, category=category).first()
+        #   creates ratings array out of string from database
             ratings = pixels.ratings.split(",")
             if len(ratings) == 366:
                 return_pixels = {
@@ -39,7 +40,8 @@ class Main(Resource):
                     "november": ratings[304:334],
                     "december": ratings[334:366]
                 }
-            if category != "exercises":
+        #   different format for "exercises" category
+            if category != Category.exercises.name:
                 for month in return_pixels:
                     return_pixels[month] = ''.join(
                         str(pixels_month) for pixels_month in return_pixels[
@@ -49,6 +51,7 @@ class Main(Resource):
                         status=200, mimetype='application/json')
         return response
 
+    #   changes values of pixels ratings
     def patch(self, year, category):
         response, user_id, new_pixel_values, date_pixel = \
             verify_jwt_and_check_for_empty("pixel_values", "date")
@@ -57,23 +60,31 @@ class Main(Resource):
                 date_pixel = datetime.strptime(date_pixel, "%Y-%m-%d")
                 if str(date_pixel.year) != str(year):
                     raise ValuesDoNotMatchException
+                #   user can't edit future pixels
                 if date_pixel > datetime.today().replace(
                         hour=23, minute=59, second=59):
                     raise WrongDateError
-                if category == "rate" or category == "mood":
+                if category == Category.rate.name or \
+                        category == Category.mood.name:
                     max_rating = 5
-                elif category == "anxiety" or category == "health":
+                elif category == Category.anxiety.name or \
+                        category == Category.health.name:
                     max_rating = 4
-                elif category == "reading":
+                elif category == Category.exercises.reading:
                     max_rating = 99999
-                elif category == "weather" or\
-                        category == "exercises":
+                elif category == Category.weather.name or\
+                        category == Category.exercises.name:
                     max_rating = 6
                 else:
                     raise InvalidCategoryError
                 values_checked = []
-                if int(new_pixel_values) > max_rating:
+                #   reading doesn't really have a max_rating and
+                #   exercises rate data is not parsed yet
+                if category != Category.exercises.name and \
+                        category != Category.reading.name and int(
+                            new_pixel_values) > max_rating:
                     raise InvalidNewPixelValues
+                #   parsing exercises ratings data and checking if it's correct
                 if category == "exercises":
                     if ("1" in str(new_pixel_values) and
                             str(new_pixel_values) != "1"):
@@ -89,6 +100,8 @@ class Main(Resource):
                         str(value) for value in values_checked)
                 pixels = Pixels.query.filter_by(
                     user_id=user_id, year=year, category=category).first()
+                #   allows to patch non-existing yet pixels, since the process
+                #   of adding new empty pixels is a bit tricky
                 if pixels is None:
                     zero_pixels = create_pixels(category, user_id, year)
                     db.session.add(zero_pixels)

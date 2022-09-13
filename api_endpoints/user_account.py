@@ -4,7 +4,9 @@ from bcrypt import hashpw, gensalt, checkpw
 
 
 class Register(Resource):
-
+    #   register procedure with a minimalistic email syntax check, the user
+    #   gets assigned uuid and his password is stored hashed with bcrypt,
+    #   also empty pixels data is created for him for the current year
     def post(self):
         try:
             response, email, password, repassword = check_if_values_are_empty(
@@ -36,9 +38,9 @@ class Register(Resource):
                     db.session.add(new_user)
                     for category in Category:
                         category = category.name
-                        category_object = create_pixels(
+                        created_pixels = create_pixels(
                             category, new_user_id)
-                        db.session.add(category_object)
+                        db.session.add(created_pixels)
                     db.session.commit()
                     response = Response(
                         json.dumps({"success": "Succesfuly created account."}),
@@ -47,17 +49,19 @@ class Register(Resource):
             response = Response(
                     json.dumps({"error": "Invalid email."}),
                     status=400, mimetype='application/json')
-        response.headers.add('Access-Control-Allow-Origin', '*')
-        response.headers.add(
-            'Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE')
-        response.headers.add(
-            'Access-Control-Allow-Headers',
-            'Origin, X-Requested-With, Content-Type, Accept')
+        #   response.headers.add('Access-Control-Allow-Origin', '*')
+        #   response.headers.add(
+        #       'Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE')
+        #   response.headers.add(
+        #       'Access-Control-Allow-Headers',
+        #       'Origin, X-Requested-With, Content-Type, Accept')
         return response
 
 
 class Logging(Resource):
-
+    #   returns jwt token for the user if the credentials are correct,
+    #   the token stores user's uuid, email, creation and expiration date
+    #   and is used with every single request for user authenthication
     def post(self):
         response, email, password = check_if_values_are_empty(
             "email", "password")
@@ -92,17 +96,18 @@ class Logging(Resource):
                 response = Response(
                     json.dumps({"error": "Wrong password!"}), status=400,
                     mimetype='application/json')
-        response.headers.add('Access-Control-Allow-Origin', '*')
-        response.headers.add(
-            'Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE')
-        response.headers.add(
-            'Access-Control-Allow-Headers',
-            'Origin, X-Requested-With, Content-Type, Accept')
+        #   response.headers.add('Access-Control-Allow-Origin', '*')
+        #   response.headers.add(
+        #       'Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE')
+        #   response.headers.add(
+        #       'Access-Control-Allow-Headers',
+        #       'Origin, X-Requested-With, Content-Type, Accept')
         return response
 
 
 class Create_password_reset_token(Resource):
-
+    #   creates the password reset token and sends
+    #   the url (which uses the token) for password reset to the user's email
     def post(self):
         response, user_id = verify_jwt()
         if response.status == "200 OK":
@@ -123,7 +128,7 @@ Password reset link was sent to {}!
 
 
 class Reset_password(Resource):
-
+    #   changes user's password to the one provided in request's json body
     def post(self, password_reset_token):
         password_reset_token = password_reset_token.replace("Bearer ", "")
         try:
@@ -161,7 +166,8 @@ class Reset_password(Resource):
 
 
 class Clear_logged_sessions(Resource):
-
+    #   makes all of the jwt tokens made by user obsolete effectively
+    #   logging off the user everywhere
     def patch(self):
         response, user_id = verify_jwt()
         if response.status == "200 OK":

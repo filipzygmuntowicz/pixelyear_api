@@ -2,7 +2,7 @@ from functions import *
 
 
 class Journal_endpoint(Resource):
-
+    #   returns journal's entry for a given day
     def get(self, date):
         response, user_id = verify_jwt()
         if response.status == "200 OK":
@@ -18,6 +18,7 @@ class Journal_endpoint(Resource):
                     status=400, mimetype='application/json')
         return response
 
+    #   inserts a new journal's entry into database
     def post(self, date):
         response, user_id, journal_content = \
             verify_jwt_and_check_for_empty("journal_content")
@@ -37,6 +38,7 @@ class Journal_endpoint(Resource):
                     status=400, mimetype='application/json')
         return response
 
+    #   changes an entry for a given date
     def patch(self, date):
 
         response, user_id, journal_content = \
