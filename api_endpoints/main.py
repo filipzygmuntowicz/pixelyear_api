@@ -70,7 +70,7 @@ class Main(Resource):
                 elif category == Category.anxiety.name or \
                         category == Category.health.name:
                     max_rating = 4
-                elif category == Category.exercises.reading:
+                elif category == Category.reading.name:
                     max_rating = 99999
                 elif category == Category.weather.name or\
                         category == Category.exercises.name:
