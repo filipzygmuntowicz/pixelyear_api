@@ -149,7 +149,6 @@ Available endpoints:
    - `POST with json body consisting of keys: ["password", "repassword"]` resets user's password if given token is correct and passwords from json body match.
   # /api/clear_logged_sessions
    - `PATCH` makes all login tokens for a given user obsolete.  
- ###### Filip Zygmuntowicz 2022
 
 # /api/journal/<string:year>(ISO 8601)
   - `GET` - returns journal's content for given date. Example:
@@ -161,3 +160,5 @@ Available endpoints:
 ```
   - `POST with json body consisting of keys: ["journal_content"]` - creates entry with content given in json's body.
   - `PATCH with json body consisting of keys: ["journal_content"]` - changes journal's content to the given in json's body.
+
+ ###### Filip Zygmuntowicz 2022
