@@ -39,7 +39,7 @@ Available endpoints:
 - `PATCH with JSON body consisting of: ["pixel_values", "date"]` changes the values of a pixel on a given date to given new values in "pixel_values". The years in url and in "date" from JSON body need to match. Date needs to be in ISO 8601 format ("YYYY-M-D"). 
 #  /api/statistics/<string:year>
   - `GET` returns statistics for a given year. Example:
-  ```json
+```json
   {
     "best_day": {
         "date": "Monday, 2022-04-11",
@@ -70,7 +70,7 @@ Available endpoints:
         "Your anxiety was lower on days in which you didn't read a lot."
     ]
 }
-  ```
+```
   
   # /api/mean/<string:year>/<string:category>?type={numeric}
    - `GET` returns mean for a given year and category, mode for "exercises" and "health" categories, arithmethic for all the others. You can skip category in url to get means of all categories. Also there is an optional argument ?type whether categories name should be replaced by their ids. Examples:
@@ -136,7 +136,7 @@ Available endpoints:
    - `POST with JSON body consisting of keys: ["email", "password", "repassword"]` registers the user. Returns error if passwords do not match or the email is taken.
   # /api/login
    - `POST with JSON body consisting of keys: ["email", "password", "never_expire"(optional) ]` returns JWT authorization token which needs to be put into Authorization header as Bearer Token. The token has an expiration date of 12 hour, it can be extended indifinitely with "never_expire" in JSON body set to True. Also returns user's uuid and email. Example:
-   ```json
+```json
    {
     "token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJ1dWlkIjoiZTE0NGUxZDQtNDQzNy00ODRjLTkzNzctMDBlYjIwOGExYWIxIiwiY3JlYXRpb25fZGF0ZSI6IjIwMjItMDktMDMgMTQ6NTU6NDQuMzI0NTg0IiwiZXhwaXJhdGlvbl9kYXRlIjoiMjA1MC0wMS0xOCAxNDo1NTo0NC4zMjQ1ODQifQ.fB7a7xqufqdBOE5xtsXE7Wka37TD0oOl0_Xb3-HhUZI",
     "uuid": "e144e1d4-4437-484c-9377-00eb208a1ab1",
@@ -153,7 +153,7 @@ Available endpoints:
 # /api/journal/<string:date>(ISO 8601)
   - `GET` - returns journal's content for given date. Example:
    - `api/journal/2022-09-11`
-  ```json
+```json
   {
     "content": "Today I woke up."
 }
@@ -164,7 +164,7 @@ Available endpoints:
 # /api/days_with_active_journal/<string:year>
   - `GET` - returns data of a given year containing information of days where the user has updated the journal. Example:
     - `api/days_with_active_journal/2022`
-    ```json
+```json
     {
       "journal_days": "0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1"
 }
