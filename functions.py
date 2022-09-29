@@ -6,11 +6,14 @@ import jwt
 from setup import jwt_key, Category
 from math import ceil
 from flask_restful import Resource
+from setup import ALLOWED_EXTENSIONS
+from uuid import uuid4
+from bcrypt import hashpw, gensalt, checkpw
 
 
 #   converts string to boolean, used in arguments parsing
 def is_str_true(string):
-    if string == "True" or string == "true":
+    if string == "True" or string == "true" or string is True:
         return True
     return False
 
@@ -34,20 +37,29 @@ def is_leap_year(year):
 def create_pixels(
         category, user_id, year=datetime.now().year, ratings=None):
     if ratings is None:
-#   creates an empty array of ratings
+        #   creates an empty array of ratings
         if is_leap_year(year):
             r = [0] * 366
-            ratings = ','.join(str(x) for x in r)
         else:
             r = [0] * 365
-            ratings = ','.join(str(x) for x in r)
+        ratings = ','.join(str(x) for x in r)
     new_pixels = Pixels(category, year, user_id, ratings)
     return new_pixels
 
 
-#   converts index of ratings array to a datetime object for the rating's day
-def get_pixels_date_out_of_index(index, year):
+#   converts index of year-to-string format to a datetime object for the
+#   rating's day
+def get_date_from_index(index, year):
     return datetime(int(year), 1, 1) + timedelta(index)
+
+
+#   reverse of get_date_from_index function
+def get_index_from_date(date):
+    date_first_jan = datetime.strptime(
+        "{}-1-1".format(date.year), "%Y-%m-%d")
+    delta = date - date_first_jan
+    pos = delta.days
+    return pos
 
 
 #   takes an array of ratings and deletes all of the empty (with 0 as a rate)
@@ -153,7 +165,8 @@ def verify_jwt(token=None):
                         json.dumps({
                             "error": "User not found."}),
                         status=400, mimetype='application/json')
-    except (jwt.exceptions.InvalidSignatureError, jwt.exceptions.DecodeError):
+    except (jwt.exceptions.InvalidSignatureError, jwt.exceptions.DecodeError,
+            AttributeError):
         response = Response(
                 json.dumps({"error": "Signature verification failed."}),
                 status=401, mimetype='application/json')
@@ -237,8 +250,11 @@ def get_mean(user_id, year, category):
 #   changes acceptable_token_creation_date for a given user,
 #   practically it works as a logout on all of the logged in
 #   devices
-def change_acceptable_token_creation_date(user_id):
-    user = User.query.filter_by(user_id=user_id).first()
+def change_acceptable_token_creation_date(user_id=None, uuid=None):
+    if user_id is not None:
+        user = User.query.filter_by(user_id=user_id).first()
+    if uuid is not None:
+        user = User.query.filter_by(uuid=uuid).first()
     user.acceptable_token_creation_date = str(datetime.today())
     db.session.add(user)
     db.session.commit()
@@ -280,21 +296,21 @@ def best_or_worst_day(ratings_array, year, best_or_worst):
                 key=lambda s: int(s[0])-int(s[1])+int(s[2])+int(s[6])))
         best_day_index = old_pixels_zipped.index(best_day_values)
         worst_day_index = old_pixels_zipped.index(worst_day_values)
-        best_day_date = get_pixels_date_out_of_index(
+        best_day_date = get_date_from_index(
             best_day_index, year)
-        worst_day_date = get_pixels_date_out_of_index(
+        worst_day_date = get_date_from_index(
             worst_day_index, year)
         return old_pixels_zipped, best_day_index, best_day_date,\
             worst_day_index, worst_day_date
 
     best_or_worst_day_index = old_pixels_zipped.index(best_or_worst_day_values)
-    best_or_worst_day_date = get_pixels_date_out_of_index(
+    best_or_worst_day_date = get_date_from_index(
             best_or_worst_day_index, year)
     return old_pixels_zipped, best_or_worst_day_index, best_or_worst_day_date
 
 
 #   transform exercises ratings data, replacing
-#   the ratings with a proper weights,
+#   the ratings with proper weights,
 #   used in calculating correlations for statistics endpoints
 def transform_exercises_data(comparable_data):
     for data in comparable_data:
@@ -360,8 +376,83 @@ def correlation(max1, max2, comparable_datas, reverse=False):
             continue
         elif data[category1] in high and data[category2] in high2:
             correlations += 1
-# print(round(corrs/len(comparable_datas), 2))
     if len(comparable_datas) != 0 and \
             correlations/len(comparable_datas) >= 0.5:
         return True
     return False
+
+
+#   logins the user using jwt
+def login_user(email, password, never_expire, oauth=False):
+    user = User.query.filter_by(email=email).first()
+    if user is None:
+        response = Response(
+            json.dumps({"error": "User not found!"}),
+            status=400, mimetype='application/json')
+    elif (oauth is True and user.oauth_user is True) or checkpw(
+            password.encode("utf-8"), user.password.encode("utf-8")):
+        if never_expire is True:
+            expiration_date = str(datetime.today() + timedelta(
+                days=9999))
+        else:
+            expiration_date = str(datetime.today() + timedelta(
+                hours=12))
+        TOKEN = jwt.encode({'uuid': user.uuid,
+                            'creation_date': str(datetime.today()),
+                            'expiration_date': expiration_date
+                            }, jwt_key)
+        response = Response(
+            json.dumps({'token': TOKEN,
+                        'uuid': user.uuid,
+                        'email': email}),
+            status=202, mimetype='application/json')
+    elif oauth is False and user.oauth_user is True:
+        response = Response(
+            json.dumps({"error": "You need to login via facebook!"}),
+            status=400,
+            mimetype='application/json')
+    else:
+        response = Response(
+            json.dumps({"error": "Wrong password!"}), status=400,
+            mimetype='application/json')
+    return response
+
+
+#   registers the user
+def register_user(email, password, repassword, oauth=False):
+    try:
+        if "@" not in email or "." not in email:
+            raise InvalidEmailException
+        user = User.query.filter_by(email=email).first()
+        if user is not None:
+            response = Response(
+                json.dumps({"error": "Email alredy in use!"}),
+                status=400, mimetype='application/json')
+        elif password != repassword:
+            response = Response(
+                json.dumps({"error": "Passwords do not match!"}),
+                status=400, mimetype='application/json')
+        else:
+            password = hashpw(
+                password.encode("utf-8"),
+                gensalt(14)).decode("utf-8")
+            user_uuid = uuid4()
+            new_user = User(user_uuid, email, password,
+                            "", "", "", oauth)
+            db.session.add(new_user)
+            db.session.commit()
+            new_user_id = new_user.user_id
+            for category in Category:
+                category = category.name
+                created_pixels = create_pixels(
+                    category, new_user_id)
+                db.session.add(created_pixels)
+            db.session.commit()
+            response = Response(
+                json.dumps({"success": "Successfuly created account."}),
+                status=201, mimetype='application/json')
+    except InvalidEmailException:
+        response = Response(
+                json.dumps({"error": "Invalid email."}),
+                status=400, mimetype='application/json')
+    return response

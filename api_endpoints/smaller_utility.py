@@ -102,3 +102,30 @@ class Updated_today_category(Resource):
                     json.dumps(response_json),
                     status=200, mimetype='application/json')
         return response
+
+
+class Days_with_active_journal(Resource):
+    #   returns in year-to-string format data
+    #   for filled and unfilled journals
+    def get(self, year):
+        response, user_id = verify_jwt()
+        if response.status == "200 OK":
+            date_first = datetime.strptime(
+                "{}-1-1".format(year), "%Y-%m-%d")
+            date_last = datetime.strptime(
+                "{}-12-31".format(year), "%Y-%m-%d")
+            journals = Journal.query.filter_by(user_id=user_id).filter(
+                Journal.date.between(date_first, date_last)).all()
+            if is_leap_year(year):
+                journal_days = [0] * 366
+            else:
+                journal_days = [0] * 365
+            if journals is not None:
+                for journal in journals:
+                    journal_days[get_index_from_date(journal.date)] = 1
+            journal_days = ','.join(str(x) for x in journal_days)
+            response_json = {"journal_days": journal_days}
+            response = Response(
+                        json.dumps(response_json),
+                        status=200, mimetype='application/json')
+        return response

@@ -6,49 +6,56 @@ class Main(Resource):
     def get(self, year, category):
         response, user_id = verify_jwt()
         if response.status == "200 OK":
-            pixels = Pixels.query.filter_by(
-                user_id=user_id, year=year, category=category).first()
-        #   creates ratings array out of string from database
-            ratings = pixels.ratings.split(",")
-            if len(ratings) == 366:
-                return_pixels = {
-                    "january": ratings[0:31],
-                    "february": ratings[31:60],
-                    "march": ratings[60:91],
-                    "april": ratings[91:121],
-                    "may": ratings[121:152],
-                    "june": ratings[152:182],
-                    "july": ratings[182:213],
-                    "august": ratings[213:244],
-                    "september": ratings[244:274],
-                    "october": ratings[274:305],
-                    "november": ratings[305:335],
-                    "december": ratings[335:367]
-                }
-            else:
-                return_pixels = {
-                    "january": ratings[0:31],
-                    "february": ratings[31:59],
-                    "march": ratings[59:90],
-                    "april": ratings[90:120],
-                    "may": ratings[120:151],
-                    "june": ratings[151:181],
-                    "july": ratings[181:212],
-                    "august": ratings[212:243],
-                    "september": ratings[243:273],
-                    "october": ratings[273:304],
-                    "november": ratings[304:334],
-                    "december": ratings[334:366]
-                }
-        #   different format for "exercises" category
-            if category != Category.exercises.name:
-                for month in return_pixels:
-                    return_pixels[month] = ''.join(
-                        str(pixels_month) for pixels_month in return_pixels[
-                            month])
-            response = Response(
-                        json.dumps(return_pixels),
-                        status=200, mimetype='application/json')
+            try:
+                pixels = Pixels.query.filter_by(
+                    user_id=user_id, year=year, category=category).first()
+                if pixels is None:
+                    raise InvalidUrlError
+        #       creates ratings array out of string from database
+                ratings = pixels.ratings.split(",")
+                if len(ratings) == 366:
+                    return_pixels = {
+                        "january": ratings[0:31],
+                        "february": ratings[31:60],
+                        "march": ratings[60:91],
+                        "april": ratings[91:121],
+                        "may": ratings[121:152],
+                        "june": ratings[152:182],
+                        "july": ratings[182:213],
+                        "august": ratings[213:244],
+                        "september": ratings[244:274],
+                        "october": ratings[274:305],
+                        "november": ratings[305:335],
+                        "december": ratings[335:367]
+                    }
+                else:
+                    return_pixels = {
+                        "january": ratings[0:31],
+                        "february": ratings[31:59],
+                        "march": ratings[59:90],
+                        "april": ratings[90:120],
+                        "may": ratings[120:151],
+                        "june": ratings[151:181],
+                        "july": ratings[181:212],
+                        "august": ratings[212:243],
+                        "september": ratings[243:273],
+                        "october": ratings[273:304],
+                        "november": ratings[304:334],
+                        "december": ratings[334:366]
+                    }
+        #       different format for "exercises" category
+                if category != Category.exercises.name:
+                    for month in return_pixels:
+                        return_pixels[month] = ''.join(
+                            str(pixels_month) for pixels_month in return_pixels[
+                                month])
+                response = Response(
+                            json.dumps(return_pixels),
+                            status=200, mimetype='application/json')
+            except InvalidUrlError:
+                response = Response(
+                            json.dumps({"error": "Invalid year or category"}),
+                            status=400, mimetype='application/json')
         return response
 
     #   changes values of pixels ratings
@@ -88,7 +95,7 @@ class Main(Resource):
                 if category == "exercises":
                     if ("1" in str(new_pixel_values) and
                             str(new_pixel_values) != "1"):
-                        raise InvalidCategoryError
+                        raise InvalidNewPixelValues
                     for value in str(new_pixel_values):
                         value = int(value)
                         if value < 0 or value > max_rating or \
@@ -109,10 +116,7 @@ class Main(Resource):
                     pixels = Pixels.query.filter_by(
                         user_id=user_id, year=year, category=category).first()
                 ratings = pixels.ratings.split(",")
-                date_first_jan = datetime.strptime(
-                    "{}-1-1".format(date_pixel.year), "%Y-%m-%d")
-                delta = date_pixel - date_first_jan
-                pos = delta.days
+                pos = get_index_from_date(date_pixel)
                 ratings[pos] = new_pixel_values
                 ratings = ','.join(
                             str(pixel_rating) for pixel_rating in ratings)

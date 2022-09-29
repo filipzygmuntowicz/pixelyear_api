@@ -135,7 +135,7 @@ Available endpoints:
   # /api/register
    - `POST with json body consisting of keys: ["email", "password", "repassword"]` registers the user. Returns error if passwords do not match or the email is taken.
   # /api/login
-   - `POST with json body consisting of keys: ["email", "password", "never_expire"(optional) ]` returns jwt authorization token which needs to be put into Authorization header as Bearer Token. The token has set expiration date for 1 hour, it can be extended indifinitely with "never_expire" in json body set to True. Also returns user's uuid and email. Example:
+   - `POST with json body consisting of keys: ["email", "password", "never_expire"(optional) ]` returns jwt authorization token which needs to be put into Authorization header as Bearer Token. The token has an expiration date of 12 hour, it can be extended indifinitely with "never_expire" in json body set to True. Also returns user's uuid and email. Example:
    ```json
    {
     "token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJ1dWlkIjoiZTE0NGUxZDQtNDQzNy00ODRjLTkzNzctMDBlYjIwOGExYWIxIiwiY3JlYXRpb25fZGF0ZSI6IjIwMjItMDktMDMgMTQ6NTU6NDQuMzI0NTg0IiwiZXhwaXJhdGlvbl9kYXRlIjoiMjA1MC0wMS0xOCAxNDo1NTo0NC4zMjQ1ODQifQ.fB7a7xqufqdBOE5xtsXE7Wka37TD0oOl0_Xb3-HhUZI",
@@ -161,4 +161,17 @@ Available endpoints:
   - `POST with json body consisting of keys: ["journal_content"]` - creates entry with content given in json's body.
   - `PATCH with json body consisting of keys: ["journal_content"]` - changes journal's content to the given in json's body.
 
+# /api/days_with_active_journal/<string:year>
+  - `GET` - returns data of a given year containing information of days where the user has updated the journal. Example:
+    - `api/days_with_active_journal/2022`
+    ```json
+    {
+      "journal_days": "0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1"
+}
+```
+# /api/google_login
+  - `POST  with json body consisting of keys: ["token", "state"]` - takes the google oauth access code, registers (if necessary) the user and returns the same json as in /api/login. Also verifies if state is valid.
+# /api/facebook_login
+  - `POST  with json body consisting of keys: ["code", "state"]` - takes the facebook oauth code, registers (if necessary) the user and returns the same json as in /api/login. Also verifies if state is valid. 
+ 
  ###### Filip Zygmuntowicz 2022

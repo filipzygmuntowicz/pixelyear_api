@@ -1,6 +1,9 @@
 from functions import *
-from uuid import uuid4
-from bcrypt import hashpw, gensalt, checkpw
+from requests import get
+from os import listdir
+from setup import app, path, facebook_app_id, facebook_app_secret
+from flask import send_file
+from shutil import copyfileobj
 
 
 class Register(Resource):
@@ -8,53 +11,10 @@ class Register(Resource):
     #   gets assigned uuid and his password is stored hashed with bcrypt,
     #   also empty pixels data is created for him for the current year
     def post(self):
-        try:
-            response, email, password, repassword = check_if_values_are_empty(
-                "email", "password", "repassword")
-            if response.status == "200 OK":
-                if "@" not in email or "." not in email:
-                    raise InvalidEmailException
-                user = User.query.filter_by(email=email).first()
-                if user is not None:
-                    response = Response(
-                        json.dumps({"error": "Email alredy in use!"}),
-                        status=400, mimetype='application/json')
-                elif password != repassword:
-                    response = Response(
-                        json.dumps({"error": "Passwords do not match!"}),
-                        status=400, mimetype='application/json')
-                else:
-                    last_user = User.query.order_by(
-                        User.user_id.desc()).first()
-                    new_user_id = 1
-                    if last_user is not None:
-                        new_user_id = last_user.user_id + 1
-                    password = hashpw(
-                        password.encode("utf-8"),
-                        gensalt(14)).decode("utf-8")
-                    user_uuid = uuid4()
-                    new_user = User(user_uuid, email, password,
-                                    "", "", "")
-                    db.session.add(new_user)
-                    for category in Category:
-                        category = category.name
-                        created_pixels = create_pixels(
-                            category, new_user_id)
-                        db.session.add(created_pixels)
-                    db.session.commit()
-                    response = Response(
-                        json.dumps({"success": "Succesfuly created account."}),
-                        status=201, mimetype='application/json')
-        except InvalidEmailException:
-            response = Response(
-                    json.dumps({"error": "Invalid email."}),
-                    status=400, mimetype='application/json')
-        #   response.headers.add('Access-Control-Allow-Origin', '*')
-        #   response.headers.add(
-        #       'Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE')
-        #   response.headers.add(
-        #       'Access-Control-Allow-Headers',
-        #       'Origin, X-Requested-With, Content-Type, Accept')
+        response, email, password, repassword = check_if_values_are_empty(
+            "email", "password", "repassword")
+        if response.status == "200 OK":
+            response = register_user(email, password, repassword)
         return response
 
 
@@ -70,38 +30,7 @@ class Logging(Resource):
         except KeyError:
             never_expire = False
         if response.status == "200 OK":
-            user = User.query.filter_by(email=email).first()
-            if user is None:
-                response = Response(
-                    json.dumps({"error": "User not found!"}),
-                    status=400, mimetype='application/json')
-            elif checkpw(
-                    password.encode("utf-8"), user.password.encode("utf-8")):
-                if never_expire is True:
-                    expiration_date = str(datetime.today() + timedelta(
-                        days=9999))
-                else:
-                    expiration_date = str(datetime.today() + timedelta(
-                        hours=1))
-                TOKEN = jwt.encode({'uuid': user.uuid,
-                                    'creation_date': str(datetime.today()),
-                                    'expiration_date': expiration_date
-                                    }, jwt_key)
-                response = Response(
-                    json.dumps({'token': TOKEN,
-                                'uuid': user.uuid,
-                                'email': email}),
-                    status=202, mimetype='application/json')
-            else:
-                response = Response(
-                    json.dumps({"error": "Wrong password!"}), status=400,
-                    mimetype='application/json')
-        #   response.headers.add('Access-Control-Allow-Origin', '*')
-        #   response.headers.add(
-        #       'Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE')
-        #   response.headers.add(
-        #       'Access-Control-Allow-Headers',
-        #       'Origin, X-Requested-With, Content-Type, Accept')
+            response = login_user(email, password, never_expire)
         return response
 
 
@@ -109,9 +38,10 @@ class Create_password_reset_token(Resource):
     #   creates the password reset token and sends
     #   the url (which uses the token) for password reset to the user's email
     def post(self):
-        response, user_id = verify_jwt()
-        if response.status == "200 OK":
-            user = User.query.filter_by(user_id=user_id).first()
+        response, email = check_if_values_are_empty(
+            "email")
+        user = User.query.filter_by(email=email).first()
+        if user is not None:
             password_reset_token = jwt.encode({
                 'is_password_reset_token': True,
                 'uuid': user.uuid,
@@ -119,42 +49,41 @@ class Create_password_reset_token(Resource):
                 'expiration_date': str(datetime.today() + timedelta(hours=0.5))
                 }, jwt_key)
             response = Response(
-                    json.dumps({"succes": """
-Password reset link was sent to {}!
- https://127.0.0.1:5000/api/reset_password/{}""".format(
-                        user.email, password_reset_token)}),
-                    status=400, mimetype='application/json')
+                json.dumps({"success": """Password reset link was sent to {}! localhost:3000/reset-password?token={}""".format(
+                    email, password_reset_token)}),
+                status=200, mimetype='application/json')
+        #response = Response(
+        #            json.dumps({"success": "If the user exists, password reset link has been sent to user's email."}),
+        #            status=200, mimetype='application/json')
         return response
 
 
 class Reset_password(Resource):
     #   changes user's password to the one provided in request's json body
-    def post(self, password_reset_token):
-        password_reset_token = password_reset_token.replace("Bearer ", "")
+    def post(self):
+        response, password, repassword, password_reset_token = \
+            check_if_values_are_empty(
+                "password", "repassword", "token")
         try:
             token = jwt.decode(password_reset_token, jwt_key, 'HS256')
             is_password_reset_token = token['is_password_reset_token']
             if is_password_reset_token is not True:
                 raise WrongTokenException
-            response, user_id = verify_jwt(password_reset_token)
             if response.status == "200 OK":
-                response, password, repassword = check_if_values_are_empty(
-                    "password", "repassword")
-                if response.status == "200 OK":
-                    if password != repassword:
-                        raise ValuesDoNotMatchException
-                    user = User.query.filter_by(user_id=user_id).first()
-                    new_password = hashpw(
-                        password.encode("utf-8"),
-                        gensalt(14)).decode("utf-8")
-                    user.password = new_password
-                    db.session.add(user)
-                    db.session.commit()
-                    change_acceptable_token_creation_date(user_id)
-                    response = Response(
-                        json.dumps({"succes": "Succesfuly changed password!"}),
-                        status=200, mimetype='application/json')
-        except (WrongTokenException, KeyError):
+                if password != repassword:
+                    raise ValuesDoNotMatchException
+                user = User.query.filter_by(uuid=token["uuid"]).first()
+                new_password = hashpw(
+                    password.encode("utf-8"),
+                    gensalt(14)).decode("utf-8")
+                user.password = new_password
+                db.session.add(user)
+                db.session.commit()
+                change_acceptable_token_creation_date(uuid=token["uuid"])
+                response = Response(
+                    json.dumps({"success": "Successfuly changed password!"}),
+                    status=200, mimetype='application/json')
+        except (jwt.exceptions.InvalidSignatureError, WrongTokenException, jwt.exceptions.DecodeError,KeyError):
             response = Response(
                             json.dumps({"error": "Wrong password reset url!"}),
                             status=400, mimetype='application/json')
@@ -174,7 +103,129 @@ class Clear_logged_sessions(Resource):
             change_acceptable_token_creation_date(user_id)
             response = Response(
                 json.dumps({
-                    "succes": "Succesfuly cleared logged in sessions."
+                    "success": "Successfuly cleared logged in sessions."
                     }),
                 status=200, mimetype='application/json')
+        return response
+
+
+class Upload_Avatar(Resource):
+    #   patch changes user's avatar the one given in body
+    def patch(self):
+        response, user_id = verify_jwt()
+        if response.status == "200 OK":
+            try:
+                if 'avatar' not in request.files:
+                    raise InvalidAvatarException
+                file = request.files['avatar']
+                filename = file.filename
+                file_extension = file.filename.rsplit('.', 1)[1].lower()
+                if '.' not in filename or \
+                        file_extension not in ALLOWED_EXTENSIONS:
+                    raise InvalidAvatarException
+                user = User.query.filter_by(user_id=user_id).first()
+                file.save(path.join(
+                    app.config['AVATARS_FOLDER'],
+                    str(user.uuid) + "." + file_extension))
+                response = Response(
+                    json.dumps({
+                        "succes": "Successfully uploaded avatar."
+                        }),
+                    status=200, mimetype='application/json')
+            except InvalidAvatarException:
+                response = Response(
+                    json.dumps({
+                        "error": "Invalid avatar file."
+                        }),
+                    status=400, mimetype='application/json')
+        return response
+
+
+class Download_Avatar(Resource):
+
+    def get(self, uuid):
+        filepath = path.join(app.config['AVATARS_FOLDER'], "default.png")
+        for file in listdir((app.config['AVATARS_FOLDER'])):
+            if uuid in file:
+                filepath = path.join(app.config['AVATARS_FOLDER'], file)
+                break
+        return send_file(filepath, mimetype='image/gif')
+
+
+class Delete_account(Resource):
+    #   deletes user's account
+    def delete(self):
+        response, user_id = verify_jwt()
+        if response.status == "200 OK":
+            user = User.query.filter_by(user_id=user_id).first()
+            email = user.email
+            Journal.query.filter_by(user_id=user_id).delete()
+            Pixels.query.filter_by(user_id=user_id).delete()
+            User.query.filter_by(email=email).delete()
+            response = Response(
+                json.dumps({
+                    "success": "Successfuly deleted account."
+                    }),
+                status=200, mimetype='application/json')
+            db.session.commit()
+        return response
+
+
+class Facebook_login(Resource):
+    #   gets user's email and profile picture from facebook graph api and uses
+    #   them to log the user in, registers the user if he's not yet registered
+    def post(self):
+        response, code, state = check_if_values_are_empty("code", "state")
+        if response.status == "200 OK":
+            #   https://www.facebook.com/v15.0/dialog/oauth?client_id=583211373601189&redirect_uri=https://localhost:3000/oauth&state=huj
+            oauth_redirect = "https://localhost:3000/oauth"
+            request = get("https://graph.facebook.com/v15.0/oauth/access_token?client_id={}&redirect_uri={}&client_secret={}&code={}".format(facebook_app_id, oauth_redirect, facebook_app_secret, code))
+            facebook_response = dict(request.json())
+            facebook_response["state"] = state
+            token = facebook_response["access_token"]
+            user_data_response = get("https://graph.facebook.com/v15.0/me?fields=email,picture&access_token={}".format(token)).json()
+            email = user_data_response["email"]
+            print(user_data_response)
+            user = User.query.filter_by(email=email).first()
+            if user is None:
+                register_user(
+                    email=email, password="", repassword="", oauth=True)
+                if user_data_response['picture']['data']['url'] != "https://scontent-waw1-1.xx.fbcdn.net/v/t1.30497-1/84628273_176159830277856_972693363922829312_n.jpg?stp=c15.0.50.50a_cp0_dst-jpg_p50x50&_nc_cat=1&ccb=1-7&_nc_sid=12b3be&_nc_ohc=FvDXNTGwVu8AX-2zO0Q&_nc_ht=scontent-waw1-1.xx&edm=AP4hL3IEAAAA&oh=00_AT_mU_RedRbpY_O6EWbjMl_ZZz7UCwcuUcv77wWpnOzAuQ&oe=635ABD19":
+                    user = User.query.filter_by(email=email).first()
+                    uuid = user.uuid
+                    r = get(user_data_response['picture']['data']['url'],
+                            stream=True)
+                    with open(path.join(
+                            app.config['AVATARS_FOLDER'], uuid + ".png"),
+                                'wb') as file:
+                        r.raw.decode_content = True
+                        copyfileobj(r.raw, file)
+            response = login_user(
+                email=email, password="oauth", never_expire=False, oauth=True)
+        return response
+
+
+class Google_login(Resource):
+
+    def post(self):
+        response, token, state = check_if_values_are_empty("token", "state")
+        if response.status == "200 OK":
+            user_data_response = get("https://www.googleapis.com/oauth2/v3/userinfo?access_token={}".format(token)).json()
+            print(user_data_response)
+            email = user_data_response["email"]
+            user = User.query.filter_by(email=email).first()
+            if user is None:
+                register_user(
+                    email=email, password="", repassword="", oauth=True)
+                if user_data_response['picture'] != "https://lh3.googleusercontent.com/a/default-user=s96-c":
+                    user = User.query.filter_by(email=email).first()
+                    uuid = user.uuid
+                    r = get(user_data_response['picture'], stream=True)
+                    with open(path.join(
+                            app.config['AVATARS_FOLDER'], uuid + ".png"),
+                                'wb') as file:
+                        r.raw.decode_content = True
+                        copyfileobj(r.raw, file)
+            response = login_user(
+                email=email, password="oauth", never_expire=False, oauth=True)
         return response

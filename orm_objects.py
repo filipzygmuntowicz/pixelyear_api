@@ -17,10 +17,11 @@ class User(db.Model):
     ips = db.Column(db.String)
     registration_date = db.Column(db.String)
     acceptable_token_creation_date = db.Column(db.String)
+    oauth_user = db.Column(db.Boolean)
 
     def __init__(
         self, uuid, email, password,
-        phone, avatar, ips
+        phone, avatar, ips, oauth_user
     ):
         self.uuid = uuid
         self.email = email
@@ -30,11 +31,13 @@ class User(db.Model):
         self.ips = ips
         self.registration_date = str(datetime.today())
         self.acceptable_token_creation_date = str(datetime.today())
+        self.oauth_user = oauth_user
 
 
 #   table for all pixels related data, core of the app
 #   one row stores data of user's ratings for one year,
-#   the ratings data is stored as a string in format: "r,r,r,...,r"
+#   the ratings data is stored as a string in
+#   format: "r,r,r,...,r" (called year-to-string format in documentation)
 #   where r is a rating for a given day, so there is either
 #   365 or 366 ratings in a given row and first r is for the 1st of january
 #   and last is for the 31st december of a given year,

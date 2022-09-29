@@ -26,3 +26,11 @@ class InvalidEmailException(Exception):
 
 class SameCategoriesException(Exception):
     pass
+
+
+class InvalidUrlError(Exception):
+    pass
+
+
+class InvalidAvatarException(Exception):
+    pass
