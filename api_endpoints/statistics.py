@@ -22,7 +22,7 @@ class Mean(Resource):
         return response
 
 
-class Mean_category(Resource):
+class MeanCategory(Resource):
     #   returns a mean for a single category for a given year
     def get(self, year, category):
 

@@ -5,7 +5,7 @@ from api_endpoints.main import *
 from api_endpoints.smaller_utility import *
 from api_endpoints.user_account import *
 from api_endpoints.statistics import *
-from api_endpoints.journal import Journal_endpoint
+from api_endpoints.journal import JournalEndpoint
 #   use this code to run the app
 #   adding all of the api waypoints
 
@@ -13,26 +13,26 @@ api.add_resource(Statistics, "/api/statistics/<string:year>")
 api.add_resource(Main, "/api/<string:year>/<string:category>")
 api.add_resource(Mean, "/api/mean/<string:year>")
 api.add_resource(
-    Days_with_active_journal, "/api/days_with_active_journal/<string:year>")
-api.add_resource(Mean_category, "/api/mean/<string:year>/<string:category>")
-api.add_resource(Years_with_active_pixel,
+    DaysWithActiveJournal, "/api/days_with_active_journal/<string:year>")
+api.add_resource(MeanCategory, "/api/mean/<string:year>/<string:category>")
+api.add_resource(YearsWithActivePixel,
                  "/api/active_years")
-api.add_resource(Updated_today, "/api/updated_today")
+api.add_resource(UpdatedToday, "/api/updated_today")
 api.add_resource(
-    Updated_today_category, "/api/updated_today/<string:category>")
+    UpdatedTodayCategory, "/api/updated_today/<string:category>")
 api.add_resource(Logging, "/api/login")
 api.add_resource(Register, "/api/register")
 api.add_resource(
-    Create_password_reset_token, "/api/create_password_reset_token")
+    CreatePasswordResetToken, "/api/create_password_reset_token")
 api.add_resource(
-    Reset_password, "/api/reset_password")
-api.add_resource(Clear_logged_sessions, "/api/clear_logged_sessions")
-api.add_resource(Journal_endpoint, "/api/journal/<string:date>")
-api.add_resource(Upload_Avatar, "/api/upload_avatar")
-api.add_resource(Download_Avatar, "/api/avatar/<string:uuid>")
-api.add_resource(Delete_account, "/api/delete_account")
-api.add_resource(Facebook_login, "/api/facebook_login")
-api.add_resource(Google_login, "/api/google_login")
+    ResetPassword, "/api/reset_password")
+api.add_resource(ClearLoggedSessions, "/api/clear_logged_sessions")
+api.add_resource(JournalEndpoint, "/api/journal/<string:date>")
+api.add_resource(UploadAvatar, "/api/upload_avatar")
+api.add_resource(DownloadAvatar, "/api/avatar/<string:uuid>")
+api.add_resource(DeleteAccount, "/api/delete_account")
+api.add_resource(FacebookLogin, "/api/facebook_login")
+api.add_resource(GoogleLogin, "/api/google_login")
 
 if __name__ == '__main__':
     app.run()

@@ -6,14 +6,13 @@ import jwt
 from setup import jwt_key, Category
 from math import ceil
 from flask_restful import Resource
-from setup import ALLOWED_EXTENSIONS
 from uuid import uuid4
 from bcrypt import hashpw, gensalt, checkpw
 
 
 #   converts string to boolean, used in arguments parsing
 def is_str_true(string):
-    if string == "True" or string == "true" or string is True:
+    if string.lower() == "true" or string is True:
         return True
     return False
 

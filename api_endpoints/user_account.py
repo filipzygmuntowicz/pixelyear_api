@@ -34,7 +34,7 @@ class Logging(Resource):
         return response
 
 
-class Create_password_reset_token(Resource):
+class CreatePasswordResetToken(Resource):
     #   creates the password reset token and sends
     #   the url (which uses the token) for password reset to the user's email
     def post(self):
@@ -58,7 +58,7 @@ class Create_password_reset_token(Resource):
         return response
 
 
-class Reset_password(Resource):
+class ResetPassword(Resource):
     #   changes user's password to the one provided in request's json body
     def post(self):
         response, password, repassword, password_reset_token = \
@@ -94,7 +94,7 @@ class Reset_password(Resource):
         return response
 
 
-class Clear_logged_sessions(Resource):
+class ClearLoggedSessions(Resource):
     #   makes all of the jwt tokens made by user obsolete effectively
     #   logging off the user everywhere
     def patch(self):
@@ -109,7 +109,7 @@ class Clear_logged_sessions(Resource):
         return response
 
 
-class Upload_Avatar(Resource):
+class UploadAvatar(Resource):
     #   patch changes user's avatar the one given in body
     def patch(self):
         response, user_id = verify_jwt()
@@ -141,7 +141,7 @@ class Upload_Avatar(Resource):
         return response
 
 
-class Download_Avatar(Resource):
+class DownloadAvatar(Resource):
 
     def get(self, uuid):
         filepath = path.join(app.config['AVATARS_FOLDER'], "default.png")
@@ -152,7 +152,7 @@ class Download_Avatar(Resource):
         return send_file(filepath, mimetype='image/gif')
 
 
-class Delete_account(Resource):
+class DeleteAccount(Resource):
     #   deletes user's account
     def delete(self):
         response, user_id = verify_jwt()
@@ -171,7 +171,7 @@ class Delete_account(Resource):
         return response
 
 
-class Facebook_login(Resource):
+class FacebookLogin(Resource):
     #   gets user's email and profile picture from facebook graph api and uses
     #   them to log the user in, registers the user if he's not yet registered
     def post(self):
@@ -205,7 +205,7 @@ class Facebook_login(Resource):
         return response
 
 
-class Google_login(Resource):
+class GoogleLogin(Resource):
 
     def post(self):
         response, token, state = check_if_values_are_empty("token", "state")

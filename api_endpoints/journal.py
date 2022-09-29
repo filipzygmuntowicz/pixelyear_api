@@ -1,7 +1,7 @@
 from functions import *
 
 
-class Journal_endpoint(Resource):
+class JournalEndpoint(Resource):
     #   returns journal's entry for a given day
     def get(self, date):
         response, user_id = verify_jwt()

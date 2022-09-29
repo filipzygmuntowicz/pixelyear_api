@@ -1,7 +1,7 @@
 from functions import *
 
 
-class Years_with_active_pixel(Resource):
+class YearsWithActivePixel(Resource):
     #   returns years where the user has rated atleast one day
     def get(self):
         response, user_id = verify_jwt()
@@ -20,7 +20,7 @@ class Years_with_active_pixel(Resource):
         return response
 
 
-class Updated_today(Resource):
+class UpdatedToday(Resource):
     #   returns the categories that the user has rated today with their
     #   corresponding rates, also returns unrated categories
     #   in a seperate array, allows for the returning data's categories to be
@@ -56,7 +56,7 @@ class Updated_today(Resource):
         return response
 
 
-class Updated_today_category(Resource):
+class UpdatedTodayCategory(Resource):
     #   same as Updated_today but for a single category provided in url
     def get(self, category):
         response, user_id = verify_jwt()
@@ -104,7 +104,7 @@ class Updated_today_category(Resource):
         return response
 
 
-class Days_with_active_journal(Resource):
+class DaysWithActiveJournal(Resource):
     #   returns in year-to-string format data
     #   for filled and unfilled journals
     def get(self, year):
