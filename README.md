@@ -150,7 +150,7 @@ Available endpoints:
   # /api/clear_logged_sessions
    - `PATCH` makes all login tokens for a given user obsolete.  
 
-# /api/journal/<string:year>(ISO 8601)
+# /api/journal/<string:date>(ISO 8601)
   - `GET` - returns journal's content for given date. Example:
    - `api/journal/2022-09-11`
 ```json
