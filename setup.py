@@ -31,6 +31,7 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['JSONIFY_PRETTYPRINT_REGULAR'] = True
 facebook_app_id = open('facebook_app_id.txt', 'r').read()
 facebook_app_secret = open('facebook_app_secret.txt', 'r').read()
+email_password = open('email_password.txt', 'r').read()
 db = SQLAlchemy(app)
 
 

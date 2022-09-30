@@ -179,7 +179,7 @@ def verify_jwt(token=None):
 #   combines check_if_values_are_empty and verify_jwt into one function,
 #   useful for the sake of DRY and code readability
 #   it returns values from checked arguments and user_id, also a response
-#   object that states whether the operation was succesfull
+#   object that states whether the operation was succesful
 def verify_jwt_and_check_for_empty(*args):
     """
         Returns a tuple:
@@ -448,7 +448,7 @@ def register_user(email, password, repassword, oauth=False):
                 db.session.add(created_pixels)
             db.session.commit()
             response = Response(
-                json.dumps({"success": "Successfuly created account."}),
+                json.dumps({"success": "Successfully created account."}),
                 status=201, mimetype='application/json')
     except InvalidEmailException:
         response = Response(

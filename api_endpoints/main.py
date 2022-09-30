@@ -126,7 +126,7 @@ class Main(Resource):
                 db.session.commit()
                 response = Response(
                         json.dumps(
-                            {"succes": """Succesfuly changed values \
+                            {"success": """Successfully changed values \
 of pixel {} to {}""".format(pos+1,
                              new_pixel_values)}), status=200,
                         mimetype='application/json')

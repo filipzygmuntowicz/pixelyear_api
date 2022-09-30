@@ -2,9 +2,12 @@ from functions import *
 from requests import get
 from os import listdir
 from setup import app, path, facebook_app_id, facebook_app_secret,\
-    ALLOWED_EXTENSIONS
+    ALLOWED_EXTENSIONS, email_password
 from flask import send_file
 from shutil import copyfileobj
+from email.message import EmailMessage
+import smtplib
+import ssl
 
 
 class Register(Resource):
@@ -41,21 +44,43 @@ class CreatePasswordResetToken(Resource):
     def post(self):
         response, email = check_if_values_are_empty(
             "email")
-        user = User.query.filter_by(email=email).first()
-        if user is not None:
-            password_reset_token = jwt.encode({
-                'is_password_reset_token': True,
-                'uuid': user.uuid,
-                'creation_date': str(datetime.today()),
-                'expiration_date': str(datetime.today() + timedelta(hours=0.5))
-                }, jwt_key)
+        if response.status == "200 OK":
             response = Response(
-                json.dumps({"success": """Password reset link was sent to {}! localhost:3000/reset-password?token={}""".format(
-                    email, password_reset_token)}),
+                json.dumps({
+                    "success": "Password reset link was sent to {}!".format(
+                        email)}),
                 status=200, mimetype='application/json')
-        #response = Response(
-        #            json.dumps({"success": "If the user exists, password reset link has been sent to user's email."}),
-        #            status=200, mimetype='application/json')
+            user = User.query.filter_by(email=email).first()
+            if user is not None:
+                password_reset_token = jwt.encode({
+                    'is_password_reset_token': True,
+                    'uuid': user.uuid,
+                    'creation_date': str(datetime.today()),
+                    'expiration_date': str(datetime.today() + timedelta(
+                        hours=0.5))
+                    }, jwt_key)
+                email_sender = 'pixelyearapp@gmail.com'
+                email_receiver = email
+                subject = 'Pixelyear pasword reset link'
+                if user.oauth_user is True:
+                    body = """
+Someone tried to reset password to your Pixelyear account but it's not possible to do that if you've registered via google or facebook.
+""".format(password_reset_token)
+                else:
+                    body = """
+Your password reset link:
+localhost:3000/reset-password?token={}
+""".format(password_reset_token)
+                em = EmailMessage()
+                em['From'] = email_sender
+                em['To'] = email_receiver
+                em['Subject'] = subject
+                em.set_content(body)
+                context = ssl.create_default_context()
+                with smtplib.SMTP_SSL(
+                        'smtp.gmail.com', 465, context=context) as smtp:
+                    smtp.login(email_sender, email_password)
+                    smtp.sendmail(email_sender, email_receiver, em.as_string())
         return response
 
 
@@ -82,7 +107,7 @@ class ResetPassword(Resource):
                 db.session.commit()
                 change_acceptable_token_creation_date(uuid=token["uuid"])
                 response = Response(
-                    json.dumps({"success": "Successfuly changed password!"}),
+                    json.dumps({"success": "Successfully changed password!"}),
                     status=200, mimetype='application/json')
         except (jwt.exceptions.InvalidSignatureError, WrongTokenException,
                 jwt.exceptions.DecodeError, KeyError):
@@ -105,7 +130,7 @@ class ClearLoggedSessions(Resource):
             change_acceptable_token_creation_date(user_id)
             response = Response(
                 json.dumps({
-                    "success": "Successfuly cleared logged in sessions."
+                    "success": "Successfully cleared logged in sessions."
                     }),
                 status=200, mimetype='application/json')
         return response
@@ -168,7 +193,7 @@ class DeleteAccount(Resource):
             User.query.filter_by(email=email).delete()
             response = Response(
                 json.dumps({
-                    "success": "Successfuly deleted account."
+                    "success": "Successfully deleted account."
                     }),
                 status=200, mimetype='application/json')
             db.session.commit()
@@ -186,26 +211,33 @@ class FacebookLogin(Resource):
             request = get("https://graph.facebook.com/v15.0/oauth/access_token?client_id={}&redirect_uri={}&client_secret={}&code={}".format(facebook_app_id, oauth_redirect, facebook_app_secret, code))
             facebook_response = dict(request.json())
             facebook_response["state"] = state
-            token = facebook_response["access_token"]
-            user_data_response = get("https://graph.facebook.com/v15.0/me?fields=email,picture&access_token={}".format(token)).json()
-            email = user_data_response["email"]
-            print(user_data_response)
-            user = User.query.filter_by(email=email).first()
-            if user is None:
-                register_user(
-                    email=email, password="", repassword="", oauth=True)
-                if user_data_response['picture']['data']['url'] != "https://scontent-waw1-1.xx.fbcdn.net/v/t1.30497-1/84628273_176159830277856_972693363922829312_n.jpg?stp=c15.0.50.50a_cp0_dst-jpg_p50x50&_nc_cat=1&ccb=1-7&_nc_sid=12b3be&_nc_ohc=FvDXNTGwVu8AX-2zO0Q&_nc_ht=scontent-waw1-1.xx&edm=AP4hL3IEAAAA&oh=00_AT_mU_RedRbpY_O6EWbjMl_ZZz7UCwcuUcv77wWpnOzAuQ&oe=635ABD19":
-                    user = User.query.filter_by(email=email).first()
-                    uuid = user.uuid
-                    r = get(user_data_response['picture']['data']['url'],
-                            stream=True)
-                    with open(path.join(
-                            app.config['AVATARS_FOLDER'], uuid + ".png"),
-                                'wb') as file:
-                        r.raw.decode_content = True
-                        copyfileobj(r.raw, file)
-            response = login_user(
-                email=email, password="oauth", never_expire=False, oauth=True)
+            try:
+                token = facebook_response["access_token"]
+                user_data_response = get("https://graph.facebook.com/v15.0/me?fields=email,picture&access_token={}".format(token)).json()
+                email = user_data_response["email"]
+                print(user_data_response)
+                user = User.query.filter_by(email=email).first()
+                if user is None:
+                    register_user(
+                        email=email, password="", repassword="", oauth=True)
+                    if user_data_response['picture']['data']['url'] != "https://scontent-waw1-1.xx.fbcdn.net/v/t1.30497-1/84628273_176159830277856_972693363922829312_n.jpg?stp=c15.0.50.50a_cp0_dst-jpg_p50x50&_nc_cat=1&ccb=1-7&_nc_sid=12b3be&_nc_ohc=FvDXNTGwVu8AX-2zO0Q&_nc_ht=scontent-waw1-1.xx&edm=AP4hL3IEAAAA&oh=00_AT_mU_RedRbpY_O6EWbjMl_ZZz7UCwcuUcv77wWpnOzAuQ&oe=635ABD19":
+                        user = User.query.filter_by(email=email).first()
+                        uuid = user.uuid
+                        r = get(user_data_response['picture']['data']['url'],
+                                stream=True)
+                        with open(path.join(
+                                app.config['AVATARS_FOLDER'], uuid + ".png"),
+                                    'wb') as file:
+                            r.raw.decode_content = True
+                            copyfileobj(r.raw, file)
+                response = login_user(
+                    email=email, password="oauth", never_expire=False, oauth=True)
+            except KeyError:
+                response = Response(
+                    json.dumps({
+                        "error": "Invalid facebook token."
+                        }),
+                    status=400, mimetype='application/json')
         return response
 
 
@@ -217,20 +249,27 @@ class GoogleLogin(Resource):
         if response.status == "200 OK":
             user_data_response = get("https://www.googleapis.com/oauth2/v3/userinfo?access_token={}".format(token)).json()
             print(user_data_response)
-            email = user_data_response["email"]
-            user = User.query.filter_by(email=email).first()
-            if user is None:
-                register_user(
-                    email=email, password="", repassword="", oauth=True)
-                if user_data_response['picture'] != "https://lh3.googleusercontent.com/a/default-user=s96-c":
-                    user = User.query.filter_by(email=email).first()
-                    uuid = user.uuid
-                    r = get(user_data_response['picture'], stream=True)
-                    with open(path.join(
-                            app.config['AVATARS_FOLDER'], uuid + ".png"),
-                                'wb') as file:
-                        r.raw.decode_content = True
-                        copyfileobj(r.raw, file)
-            response = login_user(
-                email=email, password="oauth", never_expire=False, oauth=True)
+            try:
+                email = user_data_response["email"]
+                user = User.query.filter_by(email=email).first()
+                if user is None:
+                    register_user(
+                        email=email, password="", repassword="", oauth=True)
+                    if user_data_response['picture'] != "https://lh3.googleusercontent.com/a/default-user=s96-c":
+                        user = User.query.filter_by(email=email).first()
+                        uuid = user.uuid
+                        r = get(user_data_response['picture'], stream=True)
+                        with open(path.join(
+                                app.config['AVATARS_FOLDER'], uuid + ".png"),
+                                    'wb') as file:
+                            r.raw.decode_content = True
+                            copyfileobj(r.raw, file)
+                response = login_user(
+                    email=email, password="oauth", never_expire=False, oauth=True)
+            except KeyError:
+                response = Response(
+                    json.dumps({
+                        "error": "Invalid google token."
+                        }),
+                    status=400, mimetype='application/json')
         return response

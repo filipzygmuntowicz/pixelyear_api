@@ -144,7 +144,7 @@ Available endpoints:
 }
 ```
   # /api/create_password_reset_token
-   - `POST` creates a JWT token for a password reset. Currently returns it in response, in the future will send it to user via email.
+   - `POST` creates a JWT token for a password reset and sends it to user via email.
   # /api/reset_password/<string:password_reset_token>
    - `POST with JSON body consisting of keys: ["password", "repassword"]` resets user's password if given token is correct and passwords from JSON body match.
   # /api/clear_logged_sessions
