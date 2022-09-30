@@ -12,7 +12,7 @@ from bcrypt import hashpw, gensalt, checkpw
 
 #   converts string to boolean, used in arguments parsing
 def is_str_true(string):
-    if string.lower() == "true" or string is True:
+    if str(string).lower() == "true" or string is True:
         return True
     return False
 

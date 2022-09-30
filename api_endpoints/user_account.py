@@ -1,7 +1,8 @@
 from functions import *
 from requests import get
 from os import listdir
-from setup import app, path, facebook_app_id, facebook_app_secret
+from setup import app, path, facebook_app_id, facebook_app_secret,\
+    ALLOWED_EXTENSIONS
 from flask import send_file
 from shutil import copyfileobj
 
@@ -83,7 +84,8 @@ class ResetPassword(Resource):
                 response = Response(
                     json.dumps({"success": "Successfuly changed password!"}),
                     status=200, mimetype='application/json')
-        except (jwt.exceptions.InvalidSignatureError, WrongTokenException, jwt.exceptions.DecodeError,KeyError):
+        except (jwt.exceptions.InvalidSignatureError, WrongTokenException,
+                jwt.exceptions.DecodeError, KeyError):
             response = Response(
                             json.dumps({"error": "Wrong password reset url!"}),
                             status=400, mimetype='application/json')
@@ -110,18 +112,20 @@ class ClearLoggedSessions(Resource):
 
 
 class UploadAvatar(Resource):
-    #   patch changes user's avatar the one given in body
+    #   changes user's avatar the one given in form-data body
     def patch(self):
         response, user_id = verify_jwt()
         if response.status == "200 OK":
             try:
                 if 'avatar' not in request.files:
+                    print("No avatar key")
                     raise InvalidAvatarException
                 file = request.files['avatar']
                 filename = file.filename
                 file_extension = file.filename.rsplit('.', 1)[1].lower()
                 if '.' not in filename or \
                         file_extension not in ALLOWED_EXTENSIONS:
+                    print("Bad exception")
                     raise InvalidAvatarException
                 user = User.query.filter_by(user_id=user_id).first()
                 file.save(path.join(
@@ -142,7 +146,7 @@ class UploadAvatar(Resource):
 
 
 class DownloadAvatar(Resource):
-
+    # returns avatar of user with given uuid
     def get(self, uuid):
         filepath = path.join(app.config['AVATARS_FOLDER'], "default.png")
         for file in listdir((app.config['AVATARS_FOLDER'])):
@@ -206,7 +210,8 @@ class FacebookLogin(Resource):
 
 
 class GoogleLogin(Resource):
-
+    #   gets user's email and profile picture from google api and uses
+    #   them to log the user in, registers the user if he's not yet registered
     def post(self):
         response, token, state = check_if_values_are_empty("token", "state")
         if response.status == "200 OK":

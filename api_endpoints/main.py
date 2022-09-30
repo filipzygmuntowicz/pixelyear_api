@@ -44,11 +44,12 @@ class Main(Resource):
                         "december": ratings[334:366]
                     }
         #       different format for "exercises" category
-                if category != Category.exercises.name:
+                if category != Category.exercises.name and\
+                        category != Category.reading.name:
                     for month in return_pixels:
                         return_pixels[month] = ''.join(
-                            str(pixels_month) for pixels_month in return_pixels[
-                                month])
+                            str(pixels_month) for pixels_month in
+                            return_pixels[month])
                 response = Response(
                             json.dumps(return_pixels),
                             status=200, mimetype='application/json')
