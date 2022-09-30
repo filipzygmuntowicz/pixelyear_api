@@ -1,2 +1,7 @@
 test.py
 __pycache__
+configheroku.txt
+configlocal.txt
+email_password.txt
+facebook_app_id.txt
+facebook_app_secret.txt
