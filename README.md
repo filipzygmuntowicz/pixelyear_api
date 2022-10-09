@@ -1,3 +1,18 @@
+# PREQUISITES:
+
+You need to install the required libraries via:
+```
+pip3 install -r requirements.txt
+```
+and then run the api via:
+```
+python3 app.py
+```
+Or just use docker via:
+```
+docker-compose up
+```
+# USAGE
 Categories to choose from: ["rate", "anxiety", "mood", "weather", "exercises", "reading", "health"].
 Available endpoints:
 # /api/<string:year>/<string:category>
