@@ -35,4 +35,4 @@ api.add_resource(FacebookLogin, "/api/facebook_login")
 api.add_resource(GoogleLogin, "/api/google_login")
 
 if __name__ == '__main__':
-    app.run()
+    app.run(host='0.0.0.0')
