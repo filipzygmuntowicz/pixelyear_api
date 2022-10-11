@@ -34,5 +34,6 @@ api.add_resource(DeleteAccount, "/api/delete_account")
 api.add_resource(FacebookLogin, "/api/facebook_login")
 api.add_resource(GoogleLogin, "/api/google_login")
 
+db.create_all()
 if __name__ == '__main__':
     app.run(host='0.0.0.0')

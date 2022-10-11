@@ -1,8 +1,8 @@
 from functions import *
 from requests import get
-from os import listdir
+from os import listdir, remove
 from setup import app, path, facebook_app_id, facebook_app_secret,\
-    ALLOWED_EXTENSIONS, email_password
+    ALLOWED_EXTENSIONS, email_password, pixelyear_email_address
 from flask import send_file
 from shutil import copyfileobj
 from email.message import EmailMessage
@@ -59,7 +59,7 @@ class CreatePasswordResetToken(Resource):
                     'expiration_date': str(datetime.today() + timedelta(
                         hours=0.5))
                     }, jwt_key)
-                email_sender = 'pixelyearapp@gmail.com'
+                email_sender = pixelyear_email_address
                 email_receiver = email
                 subject = 'Pixelyear pasword reset link'
                 if user.oauth_user is True:
@@ -143,19 +143,29 @@ class UploadAvatar(Resource):
         if response.status == "200 OK":
             try:
                 if 'avatar' not in request.files:
-                    print("No avatar key")
                     raise InvalidAvatarException
                 file = request.files['avatar']
                 filename = file.filename
-                file_extension = file.filename.rsplit('.', 1)[1].lower()
                 if '.' not in filename or \
-                        file_extension not in ALLOWED_EXTENSIONS:
-                    print("Bad exception")
+                        file.filename.rsplit('.', 1)[1].lower() not in\
+                        ALLOWED_EXTENSIONS:
                     raise InvalidAvatarException
+                file_extension = file.filename.rsplit('.', 1)[1].lower()
                 user = User.query.filter_by(user_id=user_id).first()
-                file.save(path.join(
+                old_avatar_exists = False
+                for fname in listdir((app.config['AVATARS_FOLDER'])):
+                    if user.uuid in fname:
+                        old_avatar_filepath = path.join(
+                            app.config['AVATARS_FOLDER'], fname)
+                        old_avatar_exists = True
+                        break
+                new_avatar_filepath = path.join(
                     app.config['AVATARS_FOLDER'],
-                    str(user.uuid) + "." + file_extension))
+                    str(user.uuid) + "." + file_extension)
+                file.save(new_avatar_filepath)
+                if old_avatar_exists and old_avatar_filepath !=\
+                        new_avatar_filepath:
+                    remove(old_avatar_filepath)
                 response = Response(
                     json.dumps({
                         "succes": "Successfully uploaded avatar."

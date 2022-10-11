@@ -12,6 +12,7 @@ Or just use docker via:
 ```
 docker-compose up
 ```
+After running the app for the first time you will be asked to provide your database credentials, facebook oauth app id, facebook oauth app secret and email address with password. You can skip (just type anything in them) all of the credentials, if you don't want to use the features associated with them (ouath logins and resetting user's password), except for your database credentials. After first run the credentials are saved in .txt files, check setup.py for file names.
 # USAGE
 Categories to choose from: ["rate", "anxiety", "mood", "weather", "exercises", "reading", "health"].
 Available endpoints:
